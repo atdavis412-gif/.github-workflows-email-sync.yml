@@ -1,0 +1,41 @@
+on:
+  schedule:
+    # Run every 5 minutes during business hours (9 AM - 6 PM EST, Mon-Fri)
+    - cron: '*/5 9-18 * * 1-5'
+  workflow_dispatch: # Allow manual triggers
+
+jobs:
+  sync-emails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Sync Agency Emails
+        env:
+          BASE44_API_KEY: ${{ secrets.BASE44_API_KEY }}
+          AGENCY_ID: ${{ secrets.AGENCY_ID }}
+        run: |
+          curl -X POST https://api.base44.com/integrations/email/sync \
+            -H "Authorization: Bearer $BASE44_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"agency_id\": \"$AGENCY_ID\"}"
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Email Sync Failed',
+              body: 'The email sync automation failed. Please check the logs.'
+            })
