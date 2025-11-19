@@ -1,0 +1,17 @@
+name: Email Sync Automation
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  sync-emails:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync Emails
+        run: |
+          curl -X POST 'https://api.base44.com/integrations/Core/SyncEmails' \
+            -H 'Authorization: Bearer ${{ secrets.BASE44_API_KEY }}' \
+            -H 'Content-Type: application/json' \
+            -d '{"agency_id": "${{ secrets.AGENCY_ID }}"}'
